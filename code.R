@@ -30,7 +30,7 @@ plotly.volume.box <- plot_ly(existing, x = existing$Volume,
 plotly.volume.box
 
 
-#Are needed attributes available?
+#Are needed attributes in both data sets?
 
 needed.categories <- filter(
   existing, ProductType %in% c(
