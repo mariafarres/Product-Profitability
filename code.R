@@ -12,7 +12,7 @@ getwd()
 existing <- read.csv("C:/Users/usuario/Desktop/UBIQUM/Project 4 - Product Profitability in R (Multiple Regression)/existing.csv")
 options(digits = 3)
 summary(existing)
-duplicated(existing)
+
 
 
 #Reclassify variables
@@ -52,9 +52,10 @@ str(existing.dummified)
 existing.final <- data.frame(predict(existing.dummified, 
                                      newdata = existing)
 )
-#Missing values
+#Missing values and duplicates check
 
 summary(is.na(existing))
+duplicated(existing)
 
 #Exclude BestsellerRank, 5Stars 
 
@@ -273,7 +274,7 @@ Errors.GBT
 Metrics.GBT <- postResample(pred = testing$GBTpredictions, obs = testing$Volume)
 Metrics.GBT
 
-########################################## COMPARE THE RESULTS ######################################
+########################################## ERROR ANALYSIS TO COMPARE RESULTS ######################################
 
 Metrics.LM.df <- data.frame(Metrics.LM)
 Metrics.GBT.df <- data.frame(Metrics.GBT)
