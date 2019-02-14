@@ -8,8 +8,9 @@ pacman::p_load("readr", "ggplot2", "rpart", "rpart.plot", "caret",
 
 ############################################# IMPORT DATA #######################################
 
-setwd("C:/Users/usuario/Desktop/UBIQUM/Project 4 - Product Profitability in R (Multiple Regression")
-existing <- read.csv("./existing.csv")
+setwd("C:/Users/usuario/Desktop/UBIQUM/Project 4 - Product Profitability in R (Multiple Regression)/Product-Profitability")
+existing <- read.csv("./DataSets/existing.csv")
+new <- read.csv("./DataSets/new.csv")
 options(digits = 3)
 summary(existing)
 
@@ -23,7 +24,7 @@ existing[id] = data.matrix(existing[id])
 sapply(existing, class)
 
 
-#Graph the data 
+#Graph the data
 
 plotly.volume.box <- plot_ly(existing, x = existing$Volume,
                              y= existing$ProductType, type = "box")
@@ -199,14 +200,12 @@ fitControl <- trainControl(
 
 #RANDOM FOREST
 
-set.seed(123)
-modelRF <- caret::train(Volume~ PositiveServiceReview + x4StarReviews + ProductDepth, 
-                        data = training, method = "rf", trControl=fitControl, 
-                        tuneLength = 2)
-
-modelRF
-modelRF$results
-plot(modelRF)
+# set.seed(123)
+# modelRF <- caret::train(Volume~ PositiveServiceReview + x4StarReviews + ProductDepth, 
+#                         data = training, method = "rf", trControl=fitControl, 
+#                         tuneLength = 2)
+# saveRDS(modelRF, "./Models/modelRF.rds")
+modelRF <- readRDS("./Models/modelRF.rds")
 
 
 #GBT
