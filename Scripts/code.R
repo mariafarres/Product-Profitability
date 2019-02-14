@@ -1,7 +1,6 @@
 ############################################ INSTALL PACKAGES ##################################
 install.packages("pacman")
-install.packages("dplyr")
-pacman::p_load("readr", "ggplot2", "rpart", "rpart.plot", "caret", 
+pacman::p_load("readr", "ggplot2", "rpart", "rpart.plot", "caret","dplyr", "Hmisc", 
                "MASS", "mlr", "plotly", "corrplot",
                "party", "ipred", "LearnBayes")
 
@@ -12,68 +11,63 @@ setwd("C:/Users/usuario/Desktop/UBIQUM/Project 4 - Product Profitability in R (M
 existing <- read.csv("./DataSets/existing.csv")
 new <- read.csv("./DataSets/new.csv")
 options(digits = 3)
+
+
+# First data set overview
 summary(existing)
 
 
-
-#Reclassify variables
-
-sapply(existing, class)
-id = 2:18
-existing[id] = data.matrix(existing[id])
-sapply(existing, class)
-
-
-#Graph the data
-
-plotly.volume.box <- plot_ly(existing, x = existing$Volume,
-                             y= existing$ProductType, type = "box")
-plotly.volume.box
-
-
-#Are needed attributes in both data sets?
-
+# Filter concerning Product Types only
 needed.categories <- filter(
   existing, ProductType %in% c(
     "PC","Laptop","Smartphone","Netbook"))
-needed.categories
+
 
 needed.categories1 <- filter(
   new, ProductType %in% c(
     "PC","Laptop","Smartphone","Netbook"))
-needed.categories1
 
 
-######################################## PREPROCESS #################################################
+######################################## PRE-PROCESSING #################################################
 
-#Dummy variables for producttypes
-
-existing.dummified <- dummyVars(" ~ .", data = existing) 
-str(existing.dummified)
-existing.final <- data.frame(predict(existing.dummified, 
-                                     newdata = existing))
-
-#Missing values and duplicates check
-
-summary(is.na(existing))
-duplicated(existing)
-
-#Exclude BestsellerRank, 5Stars 
-
+# MISSING VALUES & DUPLICATES
+summary(is.na(existing)) # NA check -> 15 missing values in BestSellersRank
 existing$BestSellersRank <- NULL
-existing.final$BestSellersRank <- NULL
+duplicated(existing)  # duplicates check -> no duplicates
 
-#Outliers Volume
 
-boxplot(existing.final$Volume)$out               
-outliersVol <- boxplot(existing.final$Volume, 
-                       plot=FALSE)$out
-existing.final[which(existing.final$Volume %in% 
-                       outliersVol),]
+
+# DATA TYPES & CLASSES TREATMENT
+sapply(existing, class) # Check attributes data class -> No attributes need treatment
+
+
+
+# Dummify product types to use the attribute in regression
+existing.dummified <- dummyVars(" ~ .", data = existing) 
+existing.final <- data.frame(predict(existing.dummified, 
+                                     newdata = existing)) # new df with dummified Product Type
+
+
+
+
+# OUTLIERS DETECTION & TREATMENT
+
+# Plot data to evaluate the distribution by Product Type
+plotly.volume.box <- plot_ly(existing, x = existing$Volume,
+                             y= existing$ProductType, type = "box")
+plotly.volume.box # Accessories, Extended Warranty and printer have volume outliers 
+
+
+outliersVol <- boxplot(existing.final$Volume)$out # Boxplot to detect overall outliers 
+boxplot(existing.final$Volume)$out # Outliers values detected: 11204 and  7036
+
 existing.final <- existing.final[-which(existing$Volume %in% 
-                                          outliersVol),]
+                                          outliersVol),] # Remove outliers in Volume
 
-#Merge extended warranty 
+
+# Extended warranty has way too many records and
+#   it is not a product category we need to focus on, as our main categories
+#   are "PC","Laptop","Smartphone","Netbook"
 
 existing.final[34:41,"Price"] <- mean(
   existing.final[34:41,"Price"]
@@ -81,50 +75,65 @@ existing.final[34:41,"Price"] <- mean(
 existing.final <- existing.final[-c(35:41),] 
 
 
+
 ########################################## ATTRIBUTE SELECTION ######################################
 
-#Correlation 
+# Correlation 
+corr_analysis <- cor(existing.final)
+corrplot <- corrplot(corr_analysis, 
+                     method = "number", 
+                     tl.cex= 0.55, number.cex = 0.53) 
+# 4 and 3 stars reviews are the most correlated variables to volume (followed by Positive)
+# however, as 4 and 3 stars are strongly correlated to each other, 
+# 4 stars is kept as its correlation to Volume is higher.
 
-corrplot <- cor(existing.final)
-corrplot
-corrplot(corrplot, method = "number", tl.cex= 0.55, number.cex = 0.53)
-
-#Exclude due to flawed data
-
+# Moreover, 5 star Reviews is excluded as it might be flawed data (correlation = 1)
 existing$x5StarReviews <- NULL
 existing.final$x5StarReviews <- NULL
 
-#Decision Tree1
 
+
+#Decision Tree to visualize correlation results
 set.seed(123)
 control.tree <- ctree_control(maxdepth = 10)
 Decision.tree <- ctree (Volume ~ ., data=existing.final, 
                         controls = control.tree)
-Decision.tree
-plot(Decision.tree)
+plot(Decision.tree) # The decision tree verifies that the most correlated variables to volume 
+                    # are 4 stars and Positive reviews
 
-DecisionTree2 <- rpart(Volume~ ., data = existing.final)
-DecisionTree2
-rpart.plot(DecisionTree2,cex=0.8)
+
 
 
 #Multiple Linear Regression
 
 set.seed(123)
 fit0 <- lm(Volume ~ ., 
-           data = existing.final)
-summary (fit0)
-fit2 <- lm(Volume ~ PositiveServiceReview + x4StarReviews, 
-           data = existing.final)
-summary (fit2)
-fit4 <- lm(Volume ~ PositiveServiceReview + x4StarReviews 
-           +0, data = existing.final)
-summary (fit4)
-fit5 <- lm(Volume ~ PositiveServiceReview + NegativeServiceReview + x4StarReviews + ProductDepth
-           +0, data = existing.final)
-summary (fit5)
+           data = existing.final) # fit0 performance (all variables in the linear model):
+                                  # R-squared:  0.863;	Adjusted R^2:  0.787 
+summary (fit0)                    
 
-#Standardise 
+
+fit1 <- lm(Volume ~ PositiveServiceReview + x4StarReviews, # fit1 performance (only Positive & 4 stars in the lm)
+           data = existing.final)                          # R-squared:  0.677,	Adjusted R^2:  0.667
+summary (fit2)
+
+
+
+fit2 <- lm(Volume ~ PositiveServiceReview + x4StarReviews # fit2 performance (fit1 but treating the intercept)
+           +0, data = existing.final)                     # R-squared:  0.773,	Adjusted R^2:  0.767 
+summary (fit2)
+
+
+fit3 <- lm(Volume ~ PositiveServiceReview + # fit 3 performance (fit2 adding Negative reviews & product depth)
+             NegativeServiceReview +        # R-squared:  0.852,	Adjusted R^2:  0.843 -> best lm results
+             x4StarReviews + 
+             ProductDepth
+           +0, data = existing.final)
+summary (fit3)
+
+
+
+#Standardization of variables to check if it helps the model perform better 
 
 set.seed(123)
 existing.final$vol.standardised <- scale(existing.final$Volume, 
@@ -136,25 +145,25 @@ existing.final$pos.standardised <- scale(existing.final$PositiveServiceReview,
 existing.final$depth.standardised <- scale(existing.final$ProductDepth, 
                                            center = TRUE, scale = TRUE)
 
-#Multiple Linear Regression (continued with standardised values) 
-
+# lm applied to standarized attributes
 set.seed(123)
-fit2.1 <- lm(vol.standardised ~ pos.standardised + x4.standardised, 
-             data = existing.final)
-summary (fit2.1)
-fit4.1 <- lm(vol.standardised ~ pos.standardised + x4.standardised 
-             +0, data = existing.final)
-summary (fit4.1)
-fit5.1 <- lm(vol.standardised ~ pos.standardised + x4.standardised + depth.standardised
-             +0, data = existing.final)
-summary (fit5.1)
+
+# After the standarization, the models tried before perform worse, for instance:
+fit3_standarized <- lm(vol.standardised ~ pos.standardised + x4.standardised + 
+               depth.standardised
+             +0, data = existing.final) 
+
+summary(fit3_standarized) # Best performance among standarised models, 
+                          # although it performs worse than not-standarised lm's
+                          # R-squared:  0.774,	Adjusted R-squared:  0.765 
+
 
 ########################################### TRAINING ##############################################
 
-#Split Data 
+# Create Data partition to train and test models
 
 set.seed(123)
-existing.partition <- createDataPartition(existing.final$Volume, p = .75, list = FALSE)
+existing.partition <- createDataPartition(existing.final$Volume, p = .75, list = FALSE) # partition 75/25
 training <- existing.final[existing.partition,]
 testing <- existing.final[-existing.partition,]
 
@@ -210,17 +219,15 @@ modelRF <- readRDS("./Models/modelRF.rds")
 
 #GBT
 
-set.seed(123)
-modelGBT <- caret::train(Volume~ PositiveServiceReview + x4StarReviews + ProductDepth
-                         +0 , data = training, trControl= fitControl, method = "gbm")
-modelGBT
-modelGBT$results
-summary(modelGBT)
-plot(modelGBT)
+# set.seed(123)
+# modelGBT <- caret::train(Volume~ PositiveServiceReview + x4StarReviews + ProductDepth
+#                          +0 , data = training, trControl= fitControl, method = "gbm")
+# saveRDS(modelGBT, "./Models/modelGBT.rds")
+modelGBT <- readRDS("./Models/modelGBT.rds")
 
 ########################################### TESTING #################################################
 
-#LINEAR MODEL (Nota bene! no linearity)
+#LINEAR MODEL (no linearity)
 
 applymodel1 <- predict(model1, 
                        newdata = testing)
@@ -330,8 +337,6 @@ g.rela.error.comp <- ggplot(df.relative.errors, aes(x, y, group=model)) + geom_p
 g.rela.error.comp
 
 ############################################# NEW DATA ##############################################
-
-new <- read.csv("./new.csv")
 
 #Reclassify variables
 
