@@ -8,8 +8,8 @@ pacman::p_load("readr", "ggplot2", "rpart", "rpart.plot", "caret",
 
 ############################################# IMPORT DATA #######################################
 
-getwd()
-existing <- read.csv("C:/Users/usuario/Desktop/UBIQUM/Project 4 - Product Profitability in R (Multiple Regression)/existing.csv")
+setwd("C:/Users/usuario/Desktop/UBIQUM/Project 4 - Product Profitability in R (Multiple Regression")
+existing <- read.csv("./existing.csv")
 options(digits = 3)
 summary(existing)
 
@@ -50,8 +50,8 @@ needed.categories1
 existing.dummified <- dummyVars(" ~ .", data = existing) 
 str(existing.dummified)
 existing.final <- data.frame(predict(existing.dummified, 
-                                     newdata = existing)
-)
+                                     newdata = existing))
+
 #Missing values and duplicates check
 
 summary(is.na(existing))
@@ -332,7 +332,7 @@ g.rela.error.comp
 
 ############################################# NEW DATA ##############################################
 
-new <- read.csv("C:/Users/usuario/Desktop/UBIQUM/Project 4 - Product Profitability in R (Multiple Regression)/new.csv")
+new <- read.csv("./new.csv")
 
 #Reclassify variables
 
