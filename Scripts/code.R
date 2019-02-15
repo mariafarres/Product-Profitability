@@ -104,37 +104,16 @@ plot(Decision.tree) # The decision tree verifies that the most correlated variab
 
 
 
-#Multiple Linear Regression
-
+# Carry out a Multiple Linear Regression to study correlation attributes further 
 set.seed(123)
-fit0 <- lm(Volume ~ ., 
-           data = existing.final) # fit0 performance (all variables in the linear model):
-                                  # R-squared:  0.863;	Adjusted R^2:  0.787 
-summary (fit0)                    
+
+# fit including ONLY the most related attributes to Volume (4 stars and positive reviews)
+fit1 <- lm(Volume ~ x4StarReviews + PositiveServiceReview+ # initial fit performance -> R-squared:  0.677,	Adjusted R^2:  0.667
+             0, data = existing.final) # Intercept detected! (Intercept)  101.801     47.717    2.13    0.036 * 
+# model performance increases without Intercept -> R-squared:  0.773,	Adjusted R^2:  0.767 
 
 
-fit1 <- lm(Volume ~ PositiveServiceReview + x4StarReviews, # fit1 performance (only Positive & 4 stars in the lm)
-           data = existing.final)                          # R-squared:  0.677,	Adjusted R^2:  0.667
-summary (fit2)
-
-
-
-fit2 <- lm(Volume ~ PositiveServiceReview + x4StarReviews # fit2 performance (fit1 but treating the intercept)
-           +0, data = existing.final)                     # R-squared:  0.773,	Adjusted R^2:  0.767 
-summary (fit2)
-
-
-fit3 <- lm(Volume ~ PositiveServiceReview + # fit 3 performance (fit2 adding Negative reviews & product depth)
-             NegativeServiceReview +        # R-squared:  0.852,	Adjusted R^2:  0.843 -> best lm results
-             x4StarReviews + 
-             ProductDepth
-           +0, data = existing.final)
-summary (fit3)
-
-
-
-#Standardization of variables to check if it helps the model perform better 
-
+# Attributes tandardization to check if it helps the model perform better 
 set.seed(123)
 existing.final$vol.standardised <- scale(existing.final$Volume, 
                                          center = TRUE, scale = TRUE)
@@ -142,20 +121,17 @@ existing.final$x4.standardised <- scale(existing.final$x4StarReviews,
                                         center = TRUE, scale = TRUE)
 existing.final$pos.standardised <- scale(existing.final$PositiveServiceReview, 
                                          center = TRUE, scale = TRUE)
-existing.final$depth.standardised <- scale(existing.final$ProductDepth, 
-                                           center = TRUE, scale = TRUE)
+
+
 
 # lm applied to standarized attributes
 set.seed(123)
+fit1_standarized <- lm(vol.standardised ~  # After the standarization, the models tried before perform worse
+                         pos.standardised +  # R-squared:  0.677,	Adjusted R-squared:  0.667
+                         x4.standardised+0,
+                       data = existing.final) 
 
-# After the standarization, the models tried before perform worse, for instance:
-fit3_standarized <- lm(vol.standardised ~ pos.standardised + x4.standardised + 
-               depth.standardised
-             +0, data = existing.final) 
 
-summary(fit3_standarized) # Best performance among standarised models, 
-                          # although it performs worse than not-standarised lm's
-                          # R-squared:  0.774,	Adjusted R-squared:  0.765 
 
 
 ########################################### TRAINING ##############################################
@@ -167,37 +143,13 @@ existing.partition <- createDataPartition(existing.final$Volume, p = .75, list =
 training <- existing.final[existing.partition,]
 testing <- existing.final[-existing.partition,]
 
-#LINEAR MODEL
-
-set.seed(123)
-model1 <- lm(Volume ~ PositiveServiceReview + x4StarReviews + ProductDepth
-             +0, data = training)
-summary (model1)
-plot(model1)
-
-model2 <- lm(Volume ~ pos.standardised + x4.standardised + depth.standardised
-             +0, data = training)
-summary (model2)
-plot(model2)
-
-model3 <- lm(vol.standardised ~ pos.standardised + x4.standardised + depth.standardised
-             +0, data = training)
-summary (model3)
-plot(model3)
-
-model4 <- lm(vol.standardised ~ PositiveServiceReview + x4StarReviews + ProductDepth
-             +0, data = training)
-summary (model4)
-plot(model4)
-
-
-
 
 
 
 ##################################### MODELLING #######################################
 
-#### CROSS-VALIDATION ####
+
+#### CROSS-VALIDATION preparation to control models' fit ####
 
 fitControl <- trainControl(
   method = "repeatedcv",
@@ -207,31 +159,47 @@ fitControl <- trainControl(
 
 
 
-#RANDOM FOREST
+#LINEAR MODEL
 
 # set.seed(123)
-# modelRF <- caret::train(Volume~ PositiveServiceReview + x4StarReviews + ProductDepth, 
-#                         data = training, method = "rf", trControl=fitControl, 
-#                         tuneLength = 2)
-# saveRDS(modelRF, "./Models/modelRF.rds")
-modelRF <- readRDS("./Models/modelRF.rds")
+# model1_lm <- lm(Volume ~ PositiveServiceReview 
+#            + x4StarReviews + ProductDepth+0, 
+#            data = training)
+# saveRDS(model1_lm, "./Models/model1_lm.rds")
+
+model1_lm <- readRDS("./Models/model1_lm.rds") # R-squared:  0.885,	Adjusted R-squared:  0.878 
 
 
 #GBT
 
 # set.seed(123)
-# modelGBT <- caret::train(Volume~ PositiveServiceReview + x4StarReviews + ProductDepth
-#                          +0 , data = training, trControl= fitControl, method = "gbm")
+# modelGBT <- caret::train(Volume~ PositiveServiceReview + x4StarReviews + ProductDepth+0,
+#                          data = training, trControl= fitControl, method = "gbm")
 # saveRDS(modelGBT, "./Models/modelGBT.rds")
-modelGBT <- readRDS("./Models/modelGBT.rds")
+modelGBT <- readRDS("./Models/modelGBT.rds")  # RMSE 304 ;  R-squared 0.849 ; MAE 220
+
+
+
+#RANDOM FOREST
+
+# set.seed(123)
+# modelRF <- caret::train(Volume~ PositiveServiceReview + x4StarReviews + ProductDepth,
+#                         data = training, method = "rf", trControl=fitControl,
+#                         tuneLength = 2)
+# saveRDS(modelRF, "./Models/modelRF.rds")
+modelRF <- readRDS("./Models/modelRF.rds") # BEST METRICS (lowest error & best fit:
+                                           #  RMSE 226 ; R-squared 0.928 ; MAE  129
+
 
 ########################################### TESTING #################################################
 
-#LINEAR MODEL (no linearity)
 
-applymodel1 <- predict(model1, 
+#LINEAR MODEL -> no linearity detected (model disregarded)
+  # Metrics: RMSE     Rsquared      MAE 
+  #        420.188    0.544         226.588 
+
+applymodel1 <- predict(model1_lm, 
                        newdata = testing)
-summary (applymodel1)
 
 testing$lmpredictions <- applymodel1
 testing$absolute.errorlm <- abs(testing$Volume - 
@@ -243,31 +211,15 @@ Errors.LM <- ggplot(data = testing, aes(x =Volume, y = absolute.errorlm))+
 Errors.LM
 
 Metrics.LM <- postResample(pred = testing$lmpredictions, obs = testing$Volume)
-Metrics.LM
 
 
-#RANDOM FOREST
 
-applymodelRF <- Predict(modelRF, newdata= testing)
-summary(applymodelRF)
-applymodelRF
 
-testing$RFpredictions <- applymodelRF
-testing$absolute.errorRF <- abs(testing$Volume - testing$RFpredictions)
-testing$relative.errorRF <- testing$absolute.errorRF/testing$Volume
-
-Errors.RF <- ggplot(data = testing, aes(x =Volume, y = absolute.errorRF))+
-  geom_smooth()+geom_point()+ggtitle("Absolute Errors in RF")
-Errors.RF
-
-Metrics.RF <- postResample(pred = testing$RFpredictions, obs = testing$Volume)
-Metrics.RF
-
-#GBT 
+#GRADIENT BOOSTING TREES
+# Metrics:   RMSE       Rsquared      MAE 
+#           331.947      0.853       205.262 
 
 applymodelGBT <- Predict(modelGBT, newdata= testing)
-summary(applymodelGBT)
-applymodelGBT
 
 testing$GBTpredictions <- applymodelGBT
 testing$absolute.errorGBT <- abs(testing$Volume - testing$GBTpredictions)
@@ -278,100 +230,100 @@ Errors.GBT <- ggplot(data = testing, aes(x =Volume, y = absolute.errorGBT))+
 Errors.GBT
 
 Metrics.GBT <- postResample(pred = testing$GBTpredictions, obs = testing$Volume)
-Metrics.GBT
+
+
+#RANDOM FOREST
+# Metrics:  RMSE       Rsquared      MAE 
+#           184.208    0.967        96.929  ->   RF metrics in testing are also the best!
+
+applymodelRF <- Predict(modelRF, newdata= testing)
+
+testing$RFpredictions <- applymodelRF
+testing$absolute.errorRF <- abs(testing$Volume - testing$RFpredictions)
+testing$relative.errorRF <- testing$absolute.errorRF/testing$Volume
+
+Errors.RF <- ggplot(data = testing, aes(x =Volume, y = absolute.errorRF))+
+  geom_smooth()+geom_point()+ggtitle("Absolute Errors in RF")
+Errors.RF
+
+Metrics.RF <- postResample(pred = testing$RFpredictions, obs = testing$Volume)
+
 
 ########################################## ERROR ANALYSIS TO COMPARE RESULTS ######################################
 
+# Table with all metrics together (visualization purposes)
 Metrics.LM.df <- data.frame(Metrics.LM)
 Metrics.GBT.df <- data.frame(Metrics.GBT)
 Metrics.RF.df <- data.frame(Metrics.RF)
 Modelresults <- cbind(Metrics.LM.df, Metrics.GBT.df, Metrics.RF.df)
 
-#Absolute Errors Comparison
+# Table with Absolute Errors Comparison (visualization purposes)
 
 dfLM=data.frame(x=testing$Volume,y=testing$absolute.errorlm)
 dfRF=data.frame(x=testing$Volume,y=testing$absolute.errorRF)
 dfGBT=data.frame(x=testing$Volume,y=testing$absolute.errorGBT)
-dfLM$model <- "Linear M"
-dfRF$model <- "RF"
-dfGBT$model <- "GBT"
+dfLM$model <- "LM abs.error"
+dfRF$model <- "RF abs.error"
+dfGBT$model <- "GBT abs.error"
 df.absolute.errors <- rbind(dfLM, dfRF, dfGBT)
 
-df.absolute.errors$ProductType <- 0
 
-df.absolute.errors$ProductTypePC <- testing$ProductType.PC
-df.absolute.errors[which(testing$ProductType.PC == 1),]$ProductType <- "PC"
-
-df.absolute.errors$ProductType.Laptop <- testing$ProductType.Laptop
-df.absolute.errors[which(testing$ProductType.Laptop == 1),]$ProductType <- "Laptop"
-
-df.absolute.errors$ProductType.Netbook <- testing$ProductType.Netbook
-df.absolute.errors[which(testing$ProductType.Netbook == 1),]$ProductType <- "Netbooks"
-
-df.absolute.errors$ProductType.Smartphones <- testing$ProductType.Smartphone
-df.absolute.errors[which(testing$ProductType.Smartphone == 1),]$ProductType <- "Smartphones"
-
-df.absolute.errors$ProductType <- factor(df.absolute.errors$ProductType)
-
-
-
-g.abs.error.comp <- ggplot(df.absolute.errors, aes(x, y, group=model,colour=ProductType)) +
-  geom_point(size=5) +
-  stat_smooth(aes(col=model))+ggtitle("Absolute Error Comparison")+ylab("Absolute Error")+
+g.abs.error.comp <- ggplot(df.absolute.errors, aes(x, y, group=model)) +
+    stat_smooth(aes(col=model))+ggtitle("Absolute Error Comparison")+ylab("Absolute Error")+
   xlab("Volume")
-g.abs.error.comp
+g.abs.error.comp # RF is the one with the lowest error; 
+                 # however, we need to bare in mind that it predicts high sales volumes worse
 
-#Relative Errors Comparison
+
+# Table with Relative Errors Comparison (visualization purposes)
 
 dfLMRe=data.frame(x=testing$Volume,y=testing$relative.errorlm)
 dfRFRe=data.frame(x=testing$Volume,y=testing$relative.errorRF)
 dfGBTRe=data.frame(x=testing$Volume,y=testing$relative.errorGBT)
-dfLMRe$model <- "Linear M"
-dfRFRe$model <- "RF"
-dfGBTRe$model <- "GBT"
+dfLMRe$model <- "LM rel.error"
+dfRFRe$model <- "RF rel.error"
+dfGBTRe$model <- "GBT rel.error"
 df.relative.errors <- rbind(dfLMRe, dfRFRe, dfGBTRe)
 
 g.rela.error.comp <- ggplot(df.relative.errors, aes(x, y, group=model)) + geom_point() + 
   stat_smooth(aes(col=model))+ggtitle("Relative Error Comparison")+ylab("Relative Error")+
   xlab("Volume")
-g.rela.error.comp
+g.rela.error.comp  # RF provides us with a really low relative error
 
-############################################# NEW DATA ##############################################
 
-#Reclassify variables
 
+
+############################################# VALIDATION SET ##############################################
+
+#### PRE-PROCESSING ####
+
+# DATA TYPES & CLASS TREATMENT
 sapply(new, class)
-id = 2:18
-new[id] = data.matrix(new[id])
-sapply(existing, class)
 
-
-#Exclude BestsellerRank, 5Stars 
+#Exclude BestsellerRank & 5Stars as we did in "existing
 new$BestSellersRank <- NULL
 new$x5StarReviews <- NULL
-new.final$BestSellersRank <- NULL
-new.final$x5StarReviews <- NULL
 
 
 ############################################ PREDICT ##############################################
 
-#RF Predict
+#LM Predict
 
-FinalPredictionRF <- predict(modelRF, newdata = new.final) 
-FinalPredictionRF
-new.final$predicted.VolumeRF <- FinalPredictionRF
+FinalPredictionLM <- predict(model1, newdata = new) 
+FinalPredictionLM
+new$predicted.VolumeLM <- FinalPredictionLM
 
 #GBT Predict
 
-FinalPredictionGBT <- predict(modelGBT, newdata = new.final) 
+FinalPredictionGBT <- predict(modelGBT, newdata = new) 
 FinalPredictionGBT
-new.final$predicted.VolumeGBT <- FinalPredictionGBT
+new$predicted.VolumeGBT <- FinalPredictionGBT
 
-#LM Predict
+#RF Predict
 
-FinalPredictionLM <- predict(model1, newdata = new.final) 
-FinalPredictionLM
-new.final$predicted.VolumeLM <- FinalPredictionLM
+FinalPredictionRF <- predict(modelRF, newdata = new) 
+FinalPredictionRF
+new$predicted.VolumeRF <- FinalPredictionRF
 
 
 #create new file
