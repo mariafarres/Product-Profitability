@@ -298,6 +298,7 @@ g.rela.error.comp  # RF provides us with a really low relative error
 #### PRE-PROCESSING ####
 
 # DATA TYPES & CLASS TREATMENT
+
 sapply(new, class)
 
 #Exclude BestsellerRank & 5Stars as we did in "existing
@@ -307,78 +308,78 @@ new$x5StarReviews <- NULL
 
 ############################################ PREDICT ##############################################
 
-#LM Predict
 
-FinalPredictionLM <- predict(model1, newdata = new) 
-FinalPredictionLM
-new$predicted.VolumeLM <- FinalPredictionLM
-
-#GBT Predict
-
-FinalPredictionGBT <- predict(modelGBT, newdata = new) 
-FinalPredictionGBT
-new$predicted.VolumeGBT <- FinalPredictionGBT
-
-#RF Predict
+#RF Prediction <- chosen method to predict as it presents the lowest error metrics
 
 FinalPredictionRF <- predict(modelRF, newdata = new) 
-FinalPredictionRF
-new$predicted.VolumeRF <- FinalPredictionRF
+new$PredictedVolumeRF <- FinalPredictionRF #Sales volume prediction with Random Forest
 
-
-#create new file
-
-output <- new
-output$PredictionsRF <- FinalPredictionRF
-output$PredictionsGBT <- FinalPredictionGBT
-output$PredicrionsLM <- FinalPredictionLM
-output
-write.csv(output, 'outputfile.csv')
-
-
-#final predictions
-new$x4StarReviews <- NULL
-new$PositiveServiceReview <- NULL
-new$ProductDepth <- NULL
-new$PredictedVolumeGBT <- NULL
-new$PredictedVolumeLM <- NULL
-
-new$PredictedVolumeLM <- FinalPredictionLM
-new$PredictedVolumeRF <- FinalPredictionRF
-new$PredictedVolumeGBT <- FinalPredictionGBT
+# Profitability calculation from Sales volume prediction*price*profit margin
 new$Profitability <- new$Price * new$ProfitMargin * new$PredictedVolumeRF
 
 
-plot.final.predictions <- ggplot(new[new$ProductType == "PC" | new$ProductType == "Laptop" | new$ProductType == "Netbook" | new$ProductType == "Smartphone",],
+
+######################################## VISUALIZATION ######################################
+
+# plot Sales by each concerning Product Category
+plot.final.predictions <- ggplot(new[new$ProductType == "PC" | 
+                                       new$ProductType == "Laptop" | 
+                                       new$ProductType == "Netbook" | 
+                                       new$ProductType == "Smartphone",],
   aes(x = ProductType, y = PredictedVolumeRF, fill= as.character(ProductNum)))+ 
-  geom_col() + ggtitle("Sales Volume for selected Product Categories") +ylab("Sales Volume")+
-  xlab("Product Type")
+  geom_col() + 
+  ggtitle("Sales by each concerning Product Category") +
+  ylab("Sales Volume")+
+  xlab("Product Type")+
+  guides(fill=guide_legend(title="Product Number"))
+
 plot.final.predictions
 
-plot.final.predictions.profitability <- ggplot(new[new$ProductType == "PC" | new$ProductType == "Laptop" | new$ProductType == "Netbook" | new$ProductType == "Smartphone",],
+
+# plot concerning categories to show the profitability predicted & empower
+# stores to keep promoting them, as they will achieve good results
+plot.final.predictions.profitability <- ggplot(new[new$ProductType == "PC" | 
+                                                     new$ProductType == "Laptop" | 
+                                                     new$ProductType == "Netbook" | 
+                                                     new$ProductType == "Smartphone",],
   aes(x = ProductType, y = Profitability, fill= as.character(ProductNum)))+ 
-  geom_col() + ggtitle("Profitability for selected Product Categories") + ylab("Profitability")+
-  xlab("Product Type")
+  geom_col() + 
+  ggtitle("Profitability by each concerning Product Category") + 
+  ylab("Profitability")+
+  xlab("Product Type")+ 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  guides(fill=guide_legend(title="Product Number"))
+
 plot.final.predictions.profitability
 
-plot.final.predictions.total <- ggplot(new, aes(x = ProductType, y = PredictedVolumeRF, fill= as.character(ProductNum)))+ 
-  geom_col() + ggtitle("Sales Volume for all  Product Categories") +ylab("Sales Volume")+
-  xlab("Product Type")
+
+# plot sales volume by Product type & number to identify most powerful categories & products
+# in terms of sales volume
+plot.final.predictions.total <- ggplot(new, aes(x = ProductType, y = PredictedVolumeRF, 
+                                                fill= as.character(ProductNum))) + 
+  geom_col() + 
+  ggtitle("Sales Volume by Product type & Product number") +
+  ylab("Sales Volume") +
+  xlab("Product Type") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  guides(fill=guide_legend(title="Product Number"))
+
 plot.final.predictions.total
 
-plot.final.predictions.total.profitability <- ggplot(new,
-  aes(x = ProductType, y = Profitability, fill= as.character(ProductNum)))+ 
-  geom_col() + ggtitle("Profitability for all Product Categories") +ylab("Profitability")+
-  xlab("Product Type")
+
+# plot profitability (all categories included) <- we conclude that the most profitable
+# categories are Game consoles and Tablets, followed by PCs.
+plot.final.predictions.total.profitability <- ggplot(new, aes(x = ProductType, 
+                                                              y = Profitability, 
+                                                              fill= as.character(ProductNum)))+ 
+  geom_col() + 
+  ggtitle("Profitability by Product Category") +
+  ylab("Profitability")+
+  xlab("Product Type")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 plot.final.predictions.total.profitability
 
-plot.final.prof <- ggplot(
-  new[new$ProductType == "PC" | new$ProductType == "Laptop" | new$ProductType == "Netbook" | new$ProductType == "Smartphone",],
-  aes(x = ProductType, y = Profitability, fill= as.character(ProductNum)))+ 
-  geom_col() + ggtitle ("Product Profitability") + ylab ("Profitability")+
-  xlab("Product Type")
-plot.final.prof
 
-
-write.csv(output, file="ProductProfitability.csv", row.names = TRUE)
+# export final CSV 
+write.csv(new, file="ProductProfitability.csv", row.names = TRUE)
 
