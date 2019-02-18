@@ -1,20 +1,27 @@
-############################################ INSTALL PACKAGES ##################################
-install.packages("pacman")
+
+## Project: Product Profitability 
+## Script purpose: analyze historical sales data and perform a sales prediction
+  #  to understand how specific product types might impact sales across the enterprise
+## Date: 12 Dec 2018
+## Author: Maria Farrés
+
+
+####################################### SET ENVIRONMENT ##################################
+# load required libraries
 pacman::p_load("readr", "ggplot2", "rpart", "rpart.plot", "caret","dplyr", "Hmisc", 
                "MASS", "mlr", "plotly", "corrplot",
                "party", "ipred", "LearnBayes")
 
 
-############################################# IMPORT DATA #######################################
-
+# import data sets & run initial exploration
 setwd("C:/Users/usuario/Desktop/UBIQUM/Project 4 - Product Profitability in R (Multiple Regression)/Product-Profitability")
 existing <- read.csv("./DataSets/existing.csv")
+summary(existing)
+
 new <- read.csv("./DataSets/new.csv")
+summary(new)
 options(digits = 3)
 
-
-# First data set overview
-summary(existing)
 
 
 # Filter concerning Product Types only
