@@ -24,7 +24,7 @@
 - Variables standarization
 
 
-**3. DATA PARTITION & CROSS-VALIDATION **
+**3. DATA PARTITION & CROSS-VALIDATION**
 
 **4. MODELLING**
 - Linear Model
