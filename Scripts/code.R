@@ -65,14 +65,16 @@ existing.final <- existing.final[-which(existing$Volume %in%
                                           outliersVol),] # Remove outliers in Volume
 
 
+# CATEGORIES TREATMENT
+
 # Extended warranty has way too many records and
 #   it is not a product category we need to focus on, as our main categories
 #   are "PC","Laptop","Smartphone","Netbook"
 
-existing.final[34:41,"Price"] <- mean(
+existing.final[34:41,"Price"] <- mean(     # mean of all prices for Extended Warranty (rows 34:41)
   existing.final[34:41,"Price"]
 )
-existing.final <- existing.final[-c(35:41),] 
+existing.final <- existing.final[-c(35:41),] # delete the rest of rows for Extended Warranty
 
 
 
@@ -134,7 +136,7 @@ fit1_standarized <- lm(vol.standardised ~  # After the standarization, the model
 
 
 
-########################################### TRAINING ##############################################
+################################# DATA PARTITION & CROSS-VALIDATION ##############################################
 
 # Create Data partition to train and test models
 
@@ -142,11 +144,6 @@ set.seed(123)
 existing.partition <- createDataPartition(existing.final$Volume, p = .75, list = FALSE) # partition 75/25
 training <- existing.final[existing.partition,]
 testing <- existing.final[-existing.partition,]
-
-
-
-
-##################################### MODELLING #######################################
 
 
 #### CROSS-VALIDATION preparation to control models' fit ####
@@ -158,6 +155,7 @@ fitControl <- trainControl(
   repeats = 3)
 
 
+##################################### MODELLING #######################################
 
 #LINEAR MODEL
 
