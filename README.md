@@ -1,5 +1,13 @@
-### **What is this task about?**
+### Product Profitability - Project Description
 
-The following report is intended to help the sales team better understand how types of products might impact sales across the enterprise by:
-- Predicting sales and profitability of four different product types that are bringing up sales concerns in one of the stores; these product categories that require further study are PCs, Laptops, Netbooks and Smartphones.
-- Assessing the impact service and customer reviews have on sales of different product types.
+**Project Goal:** The client has concerns about ongoing product sales of 4 specific product types in one of its stores (PCs, Laptops, Netbooks & Smartphones). So, we are required to analyze historical sales data and perform a sales prediction analysis to understand how these specific product types might impact sales across the enterprise.
+
+
+**Data characteristics:** we have been provided with historical sales data, that should be analysed to see the concerning product types behavior in the last months; and a data set with potential new products that might be added to the clients portfolio, where the sales volume should be predicted and related to their product category.
+
+## Technical Analysis
+**Language used:** R programming
+
+
+
+
