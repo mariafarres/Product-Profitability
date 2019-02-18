@@ -8,6 +8,31 @@
 ## Technical Analysis
 **Language used:** R programming
 
+**1. PRE-PROCESSING**
+- Missing values check 
+- Duplicates check
+- Data types & classes treatment
+- Dummify variables
+- Outliers detection & treatment
+- Categories treatment *
 
 
+**2. ATTRIBUTE SELECTION & ENGINEERING**
+- Correlation analysis (cor & corrplot)
+- Decision Tree
+- Multiple regression lm 
+- Variables standarization
+
+
+**3. DATA PARTITION & CROSS-VALIDATION **
+
+**4. MODELLING**
+- Linear Model
+- Gradient Boosting Trees
+- Random Forest
+
+**5. PREDICTION & ERROR ANALYSIS**
+
+**6. VALIDATION**
+- Using a new df with the new products that might be added to the company's portfolio to study how product categories would affect the sales volume of these new products.
 
